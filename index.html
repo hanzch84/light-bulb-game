@@ -23,6 +23,10 @@
     <div id="root"></div>
     <script type="text/babel">
         const { useState, useCallback, useRef } = React;
+        const MAX = 10;
+        const INF = 1e9;
+        const dx = [0, 0, 1, -1];
+        const dy = [1, -1, 0, 0];
 
         const LightGame = () => {
             const [grid, setGrid] = useState(Array(10).fill().map(() => Array(10).fill(false)));
@@ -42,6 +46,74 @@
                 "#######OOO",
                 "########O#"
             ];
+
+            const outrange = (x, y) => {
+                return x < 0 || x >= MAX || y < 0 || y >= MAX;
+            };
+
+            const toggle = (tmpArr, x, y) => {
+                for (let i = 0; i < 4; i++) {
+                    const nx = x + dx[i];
+                    const ny = y + dy[i];
+                    if (!outrange(nx, ny)) {
+                        tmpArr[nx][ny] = !tmpArr[nx][ny];
+                    }
+                }
+                tmpArr[x][y] = !tmpArr[x][y];
+            };
+
+            const islight = (tmpArr) => {
+                for (let i = 0; i < MAX; i++) {
+                    for (let j = 0; j < MAX; j++) {
+                        if (tmpArr[i][j]) return true;
+                    }
+                }
+                return false;
+            };
+
+            const solve = useCallback(() => {
+                let ans = INF;
+                const solution = [];
+                let bestMoves = [];
+
+                // Try all possible combinations for the first row
+                for (let step = 0; step < (1 << MAX); step++) {
+                    let cnt = 0;
+                    const moves = [];
+                    // Create a copy of the grid
+                    const tmpArr = grid.map(row => [...row]);
+
+                    // Handle first row based on current step
+                    for (let bit = 0; bit < MAX; bit++) {
+                        if (step & (1 << bit)) {
+                            cnt++;
+                            toggle(tmpArr, 0, bit);
+                            moves.push([0, bit]);
+                        }
+                    }
+
+                    // Process remaining rows
+                    for (let x = 1; x < MAX; x++) {
+                        for (let y = 0; y < MAX; y++) {
+                            if (tmpArr[x - 1][y]) {
+                                toggle(tmpArr, x, y);
+                                moves.push([x, y]);
+                                cnt++;
+                            }
+                        }
+                    }
+
+                    // Check if all lights are off
+                    if (!islight(tmpArr)) {
+                        if (cnt < ans) {
+                            ans = cnt;
+                            bestMoves = [...moves];
+                        }
+                    }
+                }
+
+                return ans === INF ? null : bestMoves;
+            }, [grid]);
 
             const toggleLights = (row, col) => {
                 const newGrid = grid.map(row => [...row]);
@@ -63,18 +135,6 @@
                 setMoves(moves + 1);
             };
 
-            const toggle = (board, i, j) => {
-                board[i][j] = !board[i][j];
-                const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
-                for (const [di, dj] of directions) {
-                    const ni = i + di;
-                    const nj = j + dj;
-                    if (ni >= 0 && ni < 10 && nj >= 0 && nj < 10) {
-                        board[ni][nj] = !board[ni][nj];
-                    }
-                }
-            };
-
             const loadExample = () => {
                 const newGrid = example.map(row => 
                     row.split('').map(cell => cell === 'O')
@@ -92,52 +152,6 @@
             };
 
             const isComplete = () => grid.every(row => row.every(cell => !cell));
-
-            const solve = useCallback(() => {
-                const solution = [];
-                let minPress = Infinity;
-                let firstLinePressCase = Array(1 << 10).fill(101);  // Initialize with large number
-
-                for (let caseMask = 0; caseMask < (1 << 10); caseMask++) {
-                    // Deep copy the grid
-                    const tmpBoard = grid.map(row => [...row]);
-                    const moves = [];
-                    let pressCount = 0;
-
-                    // First line processing
-                    for (let j = 9; j >= 0; j--) {
-                        if (caseMask & (1 << j)) {
-                            toggle(tmpBoard, 0, j);
-                            moves.push([0, j]);
-                            pressCount++;
-                        }
-                    }
-
-                    // Process from second line to last
-                    for (let i = 1; i < 10; i++) {
-                        for (let j = 0; j < 10; j++) {
-                            if (tmpBoard[i - 1][j]) {  // If light above is on
-                                toggle(tmpBoard, i, j);
-                                moves.push([i, j]);
-                                pressCount++;
-                            }
-                        }
-                    }
-
-                    // Check if last row is all off
-                    const lastRowSum = tmpBoard[9].reduce((sum, cell) => sum + (cell ? 1 : 0), 0);
-                    if (lastRowSum === 0) {
-                        firstLinePressCase[caseMask] = pressCount;
-                        if (pressCount < minPress) {
-                            minPress = pressCount;
-                            solution.length = 0;
-                            solution.push(...moves);
-                        }
-                    }
-                }
-
-                return minPress !== 101 ? solution : null;
-            }, [grid]);
 
             const autoSolve = async () => {
                 const solution = solve();
@@ -162,7 +176,6 @@
                 }, 500);
             };
 
-            // Clean up interval on unmount
             React.useEffect(() => {
                 return () => {
                     if (intervalRef.current) {
