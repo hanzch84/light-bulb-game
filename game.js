@@ -57,13 +57,6 @@ const LightGame = () => {
 
   const isComplete = () => grid.every(row => row.every(cell => !cell));
 
-  const renderCell = (isOn) => {
-    return React.createElement('i', {
-      'data-lucide': isOn ? 'lightbulb' : 'lightbulb-off',
-      className: isOn ? 'w-8 h-8 text-yellow-400' : 'w-8 h-8 text-gray-400'
-    });
-  };
-
   return (
     <div className="p-4 flex flex-col items-center space-y-4">
       <div className="space-x-4 mb-4">
@@ -90,7 +83,9 @@ const LightGame = () => {
                 onClick={() => toggleLights(i, j)}
                 className="p-2 transition-colors duration-200"
               >
-                {renderCell(cell)}
+                <span className={cell ? 'light-on' : 'light-off'}>
+                  {cell ? '💡' : '⚪'}
+                </span>
               </button>
             ))}
           </div>
@@ -109,11 +104,6 @@ const LightGame = () => {
     </div>
   );
 };
-
-// Initialize Lucide icons when the component mounts
-document.addEventListener('DOMContentLoaded', () => {
-  lucide.createIcons();
-});
 
 // Render the app
 ReactDOM.render(<LightGame />, document.getElementById('root'));
