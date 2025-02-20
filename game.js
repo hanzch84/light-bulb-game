@@ -1,5 +1,4 @@
 const { useState } = React;
-const { Lightbulb, LightbulbOff } = lucide;
 
 const LightGame = () => {
   const [grid, setGrid] = useState(Array(10).fill().map(() => Array(10).fill(false)));
@@ -58,6 +57,13 @@ const LightGame = () => {
 
   const isComplete = () => grid.every(row => row.every(cell => !cell));
 
+  const renderCell = (isOn) => {
+    return React.createElement('i', {
+      'data-lucide': isOn ? 'lightbulb' : 'lightbulb-off',
+      className: isOn ? 'w-8 h-8 text-yellow-400' : 'w-8 h-8 text-gray-400'
+    });
+  };
+
   return (
     <div className="p-4 flex flex-col items-center space-y-4">
       <div className="space-x-4 mb-4">
@@ -75,7 +81,7 @@ const LightGame = () => {
         </button>
       </div>
 
-      <div className="border border-gray-300 p-4 rounded-lg game-grid">
+      <div className="border border-gray-300 p-4 rounded-lg">
         {grid.map((row, i) => (
           <div key={i} className="flex">
             {row.map((cell, j) => (
@@ -84,10 +90,7 @@ const LightGame = () => {
                 onClick={() => toggleLights(i, j)}
                 className="p-2 transition-colors duration-200"
               >
-                {cell ? 
-                  React.createElement(Lightbulb, { size: 32, className: "text-yellow-400" }) :
-                  React.createElement(LightbulbOff, { size: 32, className: "text-gray-400" })
-                }
+                {renderCell(cell)}
               </button>
             ))}
           </div>
@@ -107,4 +110,10 @@ const LightGame = () => {
   );
 };
 
+// Initialize Lucide icons when the component mounts
+document.addEventListener('DOMContentLoaded', () => {
+  lucide.createIcons();
+});
+
+// Render the app
 ReactDOM.render(<LightGame />, document.getElementById('root'));
